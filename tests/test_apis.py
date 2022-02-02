@@ -551,6 +551,26 @@ class testSerializers(unittest.TestCase):
             '</div>tail text'
         )
 
+    def testPlainText(self):
+        """ Test Plain Text serialization. """
+        el = etree.Element('div')
+        el.set('id', 'foo<&">')
+        p = etree.SubElement(el, 'p')
+        p.text = 'foo <&escaped>'
+        p.set('hidden', 'hidden')
+        etree.SubElement(el, 'hr')
+        non_element = etree.SubElement(el, None)
+        non_element.text = 'non-element text'
+        script = etree.SubElement(non_element, 'script')
+        script.text = '<&"test\nescaping">'
+        el.tail = "tail text"
+        self.assertEqual(
+            markdown.serializers.to_plain_text_string(el),            
+            'foo &lt;&amp;escaped&gt;'            
+            'non-element text'            
+            'tail text'
+        )
+
     def testXhtml(self):
         """" Test XHTML serialization. """
         el = etree.Element('div')
@@ -687,6 +707,12 @@ class testSerializers(unittest.TestCase):
         self.assertEqual(
             markdown.markdown('foo  \nbar', output_format='html'),
             '<p>foo<br>\nbar</p>'
+        )
+
+    def testPlainTextOutput(self):
+        self.assertEqual(
+            markdown.markdown('foo  \nbar', output_format='plain'),
+            'foo\nbar'
         )
 
 

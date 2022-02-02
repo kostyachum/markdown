@@ -30,7 +30,7 @@ from .treeprocessors import build_treeprocessors
 from .inlinepatterns import build_inlinepatterns
 from .postprocessors import build_postprocessors
 from .extensions import Extension
-from .serializers import to_html_string, to_xhtml_string
+from .serializers import to_html_string, to_xhtml_string, to_plain_text_string, HTML_FORMAT, XHTML_FORMAT, PLAIN_TEXT_FORMAT
 
 __all__ = ['Markdown', 'markdown', 'markdownFromFile']
 
@@ -44,8 +44,9 @@ class Markdown:
     doc_tag = "div"     # Element used to wrap document - later removed
 
     output_formats = {
-        'html':   to_html_string,
-        'xhtml':  to_xhtml_string,
+        HTML_FORMAT:   to_html_string,        
+        XHTML_FORMAT:  to_xhtml_string,
+        PLAIN_TEXT_FORMAT:   to_plain_text_string,
     }
 
     def __init__(self, **kwargs):
@@ -271,7 +272,7 @@ class Markdown:
 
         # Serialize _properly_.  Strip top-level tags.
         output = self.serializer(root)
-        if self.stripTopLevelTags:
+        if self.stripTopLevelTags and self.output_format != PLAIN_TEXT_FORMAT:
             try:
                 start = output.index(
                     '<%s>' % self.doc_tag) + len(self.doc_tag) + 2
