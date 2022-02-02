@@ -41,11 +41,16 @@ from xml.etree.ElementTree import ProcessingInstruction
 from xml.etree.ElementTree import Comment, ElementTree, QName
 import re
 
-__all__ = ['to_html_string', 'to_xhtml_string']
+__all__ = ['to_html_string', 'to_xhtml_string', 'to_plain_text_string']
 
 HTML_EMPTY = ("area", "base", "basefont", "br", "col", "frame", "hr",
               "img", "input", "isindex", "link", "meta", "param")
 RE_AMP = re.compile(r'&(?!(?:\#[0-9]+|\#x[0-9a-f]+|[0-9a-z]+);)', re.I)
+
+HTML_FORMAT = 'html'
+XHTML_FORMAT = 'xhtml'
+PLAIN_TEXT_FORMAT = 'plain'
+
 
 try:
     HTML_EMPTY = set(HTML_EMPTY)
@@ -146,7 +151,7 @@ def _serialize_html(write, elem, format):
                     v = v.text
                 else:
                     v = _escape_attrib_html(v)
-                if k == v and format == 'html':
+                if k == v and format == HTML_FORMAT:
                     # handle boolean attributes
                     write(" %s" % v)
                 else:
@@ -169,8 +174,30 @@ def _serialize_html(write, elem, format):
     if elem.tail:
         write(_escape_cdata(elem.tail))
 
+def _serialize_plain_text(write, elem, format):
+    tag = elem.tag
+    text = elem.text
+    if tag is Comment:
+        pass
+    elif tag is ProcessingInstruction:
+        pass
+    elif tag is None:
+        if text:
+            write(_escape_cdata(text))
+        for e in elem:
+            _serialize_plain_text(write, e, format)
+    else:        
+        if text:
+            if tag.lower() not in ["script", "style"]:
+                write(_escape_cdata(text))
+        for e in elem:
+            _serialize_plain_text(write, e, format)
 
-def _write_html(root, format="html"):
+    if elem.tail:
+        write(_escape_cdata(elem.tail))
+
+
+def _write_html(root, format=HTML_FORMAT):
     assert root is not None
     data = []
     write = data.append
@@ -178,12 +205,24 @@ def _write_html(root, format="html"):
     return "".join(data)
 
 
+def _write_plain_text(root):
+    assert root is not None
+    data = []
+    write = data.append
+    _serialize_plain_text(write, root, format)
+    return "".join(data)
+
+
 # --------------------------------------------------------------------
 # public functions
 
 def to_html_string(element):
-    return _write_html(ElementTree(element).getroot(), format="html")
+    return _write_html(ElementTree(element).getroot(), format=HTML_FORMAT)
 
 
 def to_xhtml_string(element):
-    return _write_html(ElementTree(element).getroot(), format="xhtml")
+    return _write_html(ElementTree(element).getroot(), format=XHTML_FORMAT)
+
+
+def to_plain_text_string(element):
+    return _write_plain_text(ElementTree(element).getroot())
